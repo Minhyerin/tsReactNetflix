@@ -1,15 +1,16 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
-import { motion } from "framer-motion";
+import { motion, useAnimation, useScroll } from "framer-motion";
+import { Link, useMatch } from "react-router-dom";
 
-const Nav = styled.nav`
+const Nav = styled(motion.nav)`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #000;
+  // background-color: #000;
   position: fixed;
   width: 100%;
-  height: 80px;
+  height: 80px
   top: 0;
   font-size: 18px;
   color: #fff;
@@ -18,8 +19,9 @@ const Col = styled.div`
   display: flex;
   align-items: center;
 `;
+
 const Logo = styled(motion.svg)`
-  margin: 0 50px;
+  margin: 50px;
   width: 95px;
   height: 25px;
   fill: ${(props) => props.theme.red};
@@ -28,37 +30,106 @@ const Logo = styled(motion.svg)`
     stroke: #fff;
   }
 `;
+
 const Items = styled.ul`
   display: flex;
   align-items: center;
 `;
+
 const Item = styled.li`
   margin-right: 20px;
   color: ${(props) => props.theme.white.darker};
   transition: color 0.3s ease-in-out;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
   &:hover {
     color: ${(props) => props.theme.white.lighter};
   }
 `;
+
 const Search = styled.span`
   color: #fff;
+  display: flex;
+  align-items: center;
+  position: relative;
   svg {
-    height: 25px;
+    height: 20px;
   }
 `;
 
+const Circle = styled(motion.span)`
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 5px;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  background-color: ${(props) => props.theme.red};
+`;
+
+const Input = styled(motion.input)`
+  transform-origin: right center;
+  position: absolute;
+  // left: -190px;
+  right: 20px;
+  padding: 5px 10px;
+  padding-left: 40px;
+  z-index: -1;
+  color: #fff;
+  font-size: 16px;
+  background-color: transparent;
+  border: 1px solid ${(props) => props.theme.white.lighter};
+`;
+
 const logoVariants = {
-  normal: {
-    fillOpacity: 1,
-  },
+  normal: { fillOpacity: 1 },
   active: {
-    fillOpacity: 0,
+    fillOpacity: [0, 1, 0],
+    transition: { repeat: Infinity },
   },
 };
 
+const navVariants = {
+  top: { backgroundColor: "rgba(0, 0, 0, 0)" },
+  scroll: { backgroundColor: "rgba(0, 0, 0, 1)" },
+};
+
 const Header = () => {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const homeMatch = useMatch("/");
+  const tvMatch = useMatch("/tv");
+  const inputAnimation = useAnimation();
+  const navAnimation = useAnimation();
+  const { scrollY } = useScroll();
+  const toggleSearch = () => {
+    if (searchOpen) {
+      // trigger the close animation
+      inputAnimation.start({
+        scaleX: 0,
+      });
+    } else {
+      // trigger the open animation
+      inputAnimation.start({
+        scaleX: 1,
+      });
+    }
+    setSearchOpen((prev) => !prev);
+  };
+  useEffect(() => {
+    scrollY.onChange(() => {
+      if (scrollY.get() > 80) {
+        navAnimation.start("scroll");
+      } else {
+        navAnimation.start("top");
+      }
+    });
+  }, [scrollY]);
   return (
-    <Nav>
+    <Nav variants={navVariants} initial="top" animate={navAnimation}>
       <Col>
         <Logo
           variants={logoVariants}
@@ -75,19 +146,34 @@ const Header = () => {
           />
         </Logo>
         <Items>
-          <Item>Home</Item>
-          <Item>TV Shows</Item>
+          <Item>
+            <Link to="/">Home{homeMatch && <Circle layoutId="circle" />}</Link>
+          </Item>
+          <Item>
+            <Link to="/tv">
+              TV Shows{tvMatch && <Circle layoutId="circle" />}
+            </Link>
+          </Item>
         </Items>
       </Col>
       <Col>
         <Search>
-          <svg
+          <motion.svg
+            onClick={toggleSearch}
             fill="currentColor"
+            animate={{ x: searchOpen ? -220 : 0 }}
+            transition={{ type: "linear" }}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 980 512"
           >
             <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z" />
-          </svg>
+          </motion.svg>
+          <Input
+            initial={{ scaleX: 0 }}
+            animate={inputAnimation}
+            transition={{ type: "linear" }}
+            placeholder="Search for movie or tv show..."
+          />
         </Search>
       </Col>
     </Nav>
